@@ -1,0 +1,82 @@
+version: "3.2"
+
+services:
+  db:
+    container_name: mysql
+    image: mysql:5.7
+    # ports:
+    #   - "3306:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mypassword
+      MYSQL_DATABASE: ${DBNAME}
+      MYSQL_USER: ${DBUSER}
+      MYSQL_PASSWORD: ${DBPASS}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - backend
+
+  wp1:
+    container_name: wordpress1
+    image: wordpress
+    restart: always
+    # ports:
+    #  - 9001:80
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${DBNAME}
+      WORDPRESS_DB_USER: ${DBUSER}
+      WORDPRESS_DB_PASSWORD: ${DBPASS}
+    volumes:
+      - ./wp-content:/var/www/html/wp-content 
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      - db
+
+  wp2:
+    container_name: wordpress2
+    image: wordpress
+    restart: always
+    # ports:
+    #  - 9002:80
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${DBNAME}
+      WORDPRESS_DB_USER: ${DBUSER}
+      WORDPRESS_DB_PASSWORD: ${DBPASS}
+    volumes:
+      - ./wp-content:/var/www/html/wp-content 
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      - db
+
+  bal:
+    container_name: haproxy
+    build:
+      context: ./haproxy
+    image: haproxy:pkg
+    restart: always
+    ports:
+      - "80:80"
+      - "1936:1936"
+    volumes:
+     - ./haproxy/haproxy.cfg:/etc/haproxy/haproxy-alt.cfg:ro
+    networks:
+      - frontend
+    depends_on:
+      - wp1
+      - wp2
+  
+volumes:
+  dbdata:
+    
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
